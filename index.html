@@ -573,7 +573,7 @@ function runObs(stage,ctx){
   const S=Math.min(400,stage.clientWidth-8);cv.style.width=cv.style.height=S+'px';cv.width=cv.height=S*dpr;g.setTransform(dpr,0,0,dpr,0,0);
   const R=S/2-6,br=Math.max(8,S*.027),C=S/2,Rr=R-br-1,TAU=Math.PI*2;
   const col={line:css('--line'),bg:css('--panel'),ball:css('--accent')};
-  let N=6,maxN=6,balls=[],phase='run',raf,stopped=false,ok=0,ng=0,locked=false,last=0;
+  let lvl=6,N=6,maxN=6,balls=[],phase='run',raf,stopped=false,ok=0,ng=0,locked=false,last=0;
   const period=()=>Math.max(950,(ctx.practice?1800:1500)-(N-6)*55);
   // how slow the balls get around the apex (fraction of normal speed); gets less forgiving as balls increase
   const slowRate=()=>Math.min(.3,(ctx.practice?.06:.1)+(N-6)*.02);
@@ -606,8 +606,12 @@ function runObs(stage,ctx){
   }
   function answer(n){
     if(locked||stopped)return;locked=true;const right=n===N;const fb=$('#obsFb',stage);
-    if(right){ok++;fb.textContent='正解';fb.className='fb ok';N++;maxN=Math.max(maxN,N)}
-    else{ng++;fb.textContent=`不正解（${N} 個）`;fb.className='fb ng';N=Math.max(6,N-1)}
+    if(right){ok++;fb.textContent='正解';fb.className='fb ok';lvl++}
+    else{ng++;fb.textContent=`不正解（${N} 個）`;fb.className='fb ng';lvl=Math.max(6,lvl-1)}
+    // difficulty level climbs with each correct answer, but the actual count jitters around it
+    // (−1 to +2) so the next answer can't be predicted; never repeat the same count twice in a row
+    let nx;do{nx=Math.max(6,lvl+rand(-1,2))}while(nx===N&&lvl>6);
+    N=nx;maxN=Math.max(maxN,N);
     phase='hold';
     setTimeout(()=>{if(stopped)return;fb.textContent='';newRound()},ctx.practice&&!right?1300:650);
   }
@@ -780,7 +784,7 @@ const MODULES=[
    desc:`<p>2つの図形が次々に切り替わります。左右が同じ図形のときだけボタンを押してください。正しく押すほど切り替えが速くなります。違う図形で押すと減点です。</p>`,
    keys:'Space または Enter（スマホは「同じ！」ボタン）'},
   {id:'obs',name:'観察力',time:[60,180],run:runObs,sum:'弾む玉が一斉に頂点でスローになる間に個数を数える',
-   desc:`<p>玉は円の壁で跳ね返り続けます。床で弾むボールと同じで、どこの壁（上・下・横）で反射した玉も、内側に向かって減速しながら頂点まで上がり、また壁へ戻っていきます。全部の玉が同じリズムで弾むので、頂点に達するタイミングは全員同じで、その前後で一斉にスローになります。そのスローの間に数える（覚える）のがポイントです。</p><p>5つの選択肢から個数を選んでください。最初は6個で、正解すると1個ずつ増え、間違えると1個減ります。玉が増えるほど動きが速く、スローも短く浅くなります。</p>`,
+   desc:`<p>玉は円の壁で跳ね返り続けます。床で弾むボールと同じで、どこの壁（上・下・横）で反射した玉も、内側に向かって減速しながら頂点まで上がり、また壁へ戻っていきます。全部の玉が同じリズムで弾むので、頂点に達するタイミングは全員同じで、その前後で一斉にスローになります。そのスローの間に数える（覚える）のがポイントです。</p><p>5つの選択肢から個数を選んでください。最初は6個前後で、正解を重ねるほど玉の数は増えていきますが、毎回の個数はランダムに上下するので前の答えから予測はできません。間違えると少し易しくなります。玉が増えるほど動きが速く、スローも短く浅くなります。</p>`,
    keys:'選択肢：1〜5キー（左から順）またはタップ'},
   {id:'spa',name:'空間認識',time:[60,180],run:runSpa,sum:'GYRO と RBI を読み、正しい向きの機体を正しいゾーンへ',
    desc:`<p>GYRO は機首方位を示します（上に来ている方位が進行方向）。RBI は上が常に機首方向で、黄色い矢印の先が無線局のある方向です。右の4機から GYRO の方位に飛んでいる機体を選び、局（中央）から見た自機の位置のゾーンに置いてください。</p><p>考え方：局は機体から見て「機首方位 + 相対方位」の方向にある → 機体はその反対側にいる。例：機首 S（180°）、矢印が右後方（135°）なら局は 315°（NW）方向 → 機体は局の SE、ゾーン4。</p>`,
